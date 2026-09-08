@@ -10,10 +10,17 @@ import {
   benchmarkTaskPrompt,
   benchmarkJudgePrompt,
 } from './prompts.mjs';
+import {
+  createAgentStore,
+  callOpenRouter,
+  fetchModelCatalog,
+} from './agent-store.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, 'public');
-const RANKINGS_FILE = path.join(ROOT, '.data', 'rankings.json');
+const DATA_DIR = path.join(ROOT, '.data');
+const RANKINGS_FILE = path.join(DATA_DIR, 'rankings.json');
+const agentStore = createAgentStore(DATA_DIR);
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.DUET_COUNCIL_PORT || 9977);
 const TYPES = {
@@ -32,9 +39,19 @@ const DUET_TOOL = process.env.DUET_COMMAND
       prefix: [path.join(USER_HOME, 'duet', 'bin', 'duet.js')],
     };
 
-// Every agent Quorum actually knows how to invoke, keyed by id. Add or remove agents in
-// agents.config.mjs — this file has no agent-specific logic.
-const AGENTS = Object.fromEntries(AGENT_LIST.map((a) => [a.id, a]));
+// Every agent Quorum actually knows how to invoke, keyed by id: the statically
+// configured ones from agents.config.mjs, plus any added at runtime through the UI
+// (OpenRouter-backed, see agent-store.mjs). Starts with just the static list so
+// createServer() works immediately even before rebuildAgents() has resolved once.
+let AGENTS = Object.fromEntries(AGENT_LIST.map((a) => [a.id, a]));
+let openrouterKey = '';
+async function rebuildAgents() {
+  openrouterKey = await agentStore.getKey();
+  const dynamic = await agentStore.listAgents();
+  AGENTS = Object.fromEntries(
+    [...AGENT_LIST, ...dynamic].map((a) => [a.id, a]),
+  );
+}
 
 // Courts. `tags: null` means every agent sits on it (Supreme Court). Otherwise an agent
 // sits on a court if any of its tags match the court's tags.
@@ -96,6 +113,7 @@ function publicAgent(a) {
     symbol: a.symbol,
     color: a.color,
     tags: a.tags,
+    removable: Boolean(a.removable),
   };
 }
 
@@ -160,6 +178,8 @@ function fillTemplate(template, vars) {
 }
 
 function callAgent(agent, prompt, cwd, options) {
+  if (agent.provider === 'openrouter')
+    return callOpenRouter(openrouterKey, agent.model, prompt);
   const args = fillTemplate(agent.askArgs, {
     '{cwd}': cwd,
     '{prompt}': prompt,
@@ -168,7 +188,10 @@ function callAgent(agent, prompt, cwd, options) {
   if (agent.promptVia === 'stdin') runOptions.input = prompt;
   return runTool(agent, args, runOptions);
 }
+// OpenRouter agents are validated once, live, when they're added (see agent-store.mjs
+// addAgent) — no need to spend a real request re-checking them on every health poll.
 function checkVersion(agent) {
+  if (agent.provider === 'openrouter') return Promise.resolve(agent.model);
   return runTool(agent, agent.versionArgs, { timeoutMs: 15000 });
 }
 
@@ -352,12 +375,24 @@ async function configResponse() {
   const rankings = await loadRankings();
   return {
     agents: Object.values(AGENTS).map(publicAgent),
+    hasOpenRouterKey: Boolean(openrouterKey),
     councils: COUNCILS.map((c) => ({
       ...c,
       agents: agentsForCouncil(c).map((a) => a.id),
       rankings: rankings[c.id] || {},
     })),
   };
+}
+
+async function addAgentRoute(payload) {
+  const agent = await agentStore.addAgent(payload);
+  await rebuildAgents();
+  return { agent: publicAgent(agent) };
+}
+async function removeAgentRoute(id) {
+  await agentStore.removeAgent(id);
+  await rebuildAgents();
+  return { ok: true };
 }
 
 function send(res, status, value) {
@@ -398,6 +433,18 @@ export function createServer() {
         return send(res, 200, await healthCheck());
       if (req.method === 'GET' && req.url === '/api/config')
         return send(res, 200, await configResponse());
+      if (req.method === 'GET' && req.url === '/api/openrouter/models')
+        return send(res, 200, { models: await fetchModelCatalog() });
+      if (req.method === 'POST' && req.url === '/api/agents')
+        return send(res, 200, await addAgentRoute(await body(req)));
+      if (req.method === 'DELETE' && req.url.startsWith('/api/agents/'))
+        return send(
+          res,
+          200,
+          await removeAgentRoute(
+            decodeURIComponent(req.url.slice('/api/agents/'.length)),
+          ),
+        );
       if (req.method === 'POST' && req.url === '/api/discuss')
         return send(res, 200, await discuss(await body(req)));
       if (req.method === 'POST' && req.url === '/api/implement')
@@ -414,7 +461,10 @@ export function createServer() {
 if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-)
+) {
+  await agentStore.importKeyFromSibling(ROOT);
+  await rebuildAgents();
   createServer().listen(PORT, HOST, () =>
     console.log(`Quorum ready at http://${HOST}:${PORT}/`),
   );
+}

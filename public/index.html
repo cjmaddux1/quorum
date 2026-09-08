@@ -42,6 +42,67 @@
         <div id="courtBoards"></div>
       </div>
     </div>
+    <div id="addAgentOverlay" class="overlay hidden">
+      <div class="overlay-panel narrow">
+        <div class="overlay-head">
+          <div>
+            <p class="eyebrow">POWERED BY OPENROUTER</p>
+            <h2>Add Agent</h2>
+          </div>
+          <button type="button" id="addAgentCloseBtn" class="ghost">
+            CLOSE ✕
+          </button>
+        </div>
+        <form id="addAgentForm">
+          <label class="field-label" for="agentLabel">Name</label>
+          <input
+            id="agentLabel"
+            type="text"
+            placeholder="e.g. Gemini, GPT-5, Grok…"
+            autocomplete="off"
+          />
+
+          <label class="field-label" for="agentModelSearch">Model</label>
+          <input
+            id="agentModelSearch"
+            type="text"
+            placeholder="Search models…"
+            autocomplete="off"
+          />
+          <select id="agentModel" size="6"></select>
+
+          <label class="field-label">Seats it on</label>
+          <div class="tag-checks">
+            <label
+              ><input type="checkbox" id="tagGeneral" checked /> Coding /
+              General</label
+            >
+            <label><input type="checkbox" id="tagImage" /> Image</label>
+            <label><input type="checkbox" id="tagStl" /> STL</label>
+          </div>
+
+          <label class="field-label" id="agentKeyLabel" for="agentKey"
+            >OpenRouter API key</label
+          >
+          <input
+            id="agentKey"
+            type="password"
+            placeholder="sk-or-…"
+            autocomplete="off"
+          />
+          <p id="agentKeyHint" class="hint"></p>
+
+          <p id="addAgentError" class="form-error hidden"></p>
+          <p class="hint">
+            This agent answers from the conversation only — unlike Codex or
+            Claude Code, it can't read files in your project.
+          </p>
+          <button type="submit" id="addAgentSubmitBtn" class="primary full">
+            ADD AGENT
+          </button>
+        </form>
+      </div>
+    </div>
     <main class="shell">
       <aside class="rail">
         <section class="panel project-panel">
@@ -73,6 +134,9 @@
           <p id="noAgents" class="hint hidden">
             No agents are currently assigned to this court.
           </p>
+          <button type="button" id="addAgentBtn" class="ghost full">
+            + ADD AGENT
+          </button>
         </section>
         <section class="panel benchmark-panel">
           <div class="eyebrow">RANKING</div>

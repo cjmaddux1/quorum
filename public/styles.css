@@ -569,6 +569,89 @@ button:disabled {
   margin: 4px 0 0;
   font-size: 22px;
 }
+.overlay-panel.narrow {
+  max-width: 420px;
+}
+.field-label {
+  font: 600 11px var(--mono);
+  display: block;
+  margin: 16px 0 8px;
+  color: #bfb5a8;
+}
+.field-label:first-of-type {
+  margin-top: 0;
+}
+#addAgentForm input[type='text'],
+#addAgentForm input[type='password'] {
+  width: 100%;
+  background: #080a0d;
+  border: 1px solid var(--line2);
+  color: var(--white);
+  font: 11px var(--mono);
+  padding: 11px;
+  outline: none;
+}
+#addAgentForm input:focus {
+  border-color: rgba(255, 159, 47, 0.55);
+  box-shadow: 0 0 0 2px rgba(255, 159, 47, 0.08);
+}
+#agentModel {
+  width: 100%;
+  margin-top: 8px;
+  background: #080a0d;
+  border: 1px solid var(--line2);
+  color: var(--white);
+  font: 11px var(--mono);
+}
+#agentModel option {
+  padding: 6px 8px;
+}
+.tag-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font: 11px var(--mono);
+  color: #bfb5a8;
+}
+.tag-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-error {
+  font: 11px/1.5 var(--mono);
+  color: var(--red);
+  margin: 14px 0 0;
+}
+.full {
+  width: 100%;
+  margin-top: 14px;
+}
+.agent-row {
+  position: relative;
+}
+.agent-remove {
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  display: none;
+  place-items: center;
+  border: 1px solid var(--line2);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 9px;
+  padding: 0;
+  line-height: 1;
+}
+.agent-row:hover .agent-remove {
+  display: grid;
+}
+.agent-remove:hover {
+  color: var(--red);
+  border-color: rgba(255, 108, 101, 0.4);
+}
 .board {
   margin-bottom: 22px;
 }

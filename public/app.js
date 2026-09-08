@@ -13,6 +13,8 @@ const state = {
   councilId: 'supreme-court',
   agents: {},
   councils: [],
+  hasOpenRouterKey: false,
+  models: null,
 };
 
 function activeCouncil() {
@@ -99,6 +101,30 @@ function agentRow(agent, rank) {
   const dot = document.createElement('span');
   dot.className = `status-dot${agent.online ? ' online' : agent.online === false ? ' offline' : ''}`;
   el.append(symbol, mid, dot);
+  if (agent.removable) {
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'agent-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = `Remove ${agent.label}`;
+    removeBtn.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      if (!confirm(`Remove ${agent.label}?`)) return;
+      try {
+        const response = await fetch(
+          `/api/agents/${encodeURIComponent(agent.id)}`,
+          {
+            method: 'DELETE',
+          },
+        );
+        if (!response.ok) throw new Error((await response.json()).error);
+        await loadConfig();
+      } catch (error) {
+        alert(`Couldn't remove ${agent.label}: ${error.message}`);
+      }
+    });
+    el.append(removeBtn);
+  }
   return el;
 }
 
@@ -170,6 +196,7 @@ async function loadConfig() {
       (data.agents || []).map((a) => [a.id, a]),
     );
     state.councils = data.councils || [];
+    state.hasOpenRouterKey = Boolean(data.hasOpenRouterKey);
   } catch {
     state.agents = {
       codex: { id: 'codex', label: 'Codex', symbol: 'C', color: 'blue' },
@@ -454,6 +481,107 @@ $('leaderboardCloseBtn').addEventListener('click', () => {
 $('leaderboardOverlay').addEventListener('click', (event) => {
   if (event.target.id === 'leaderboardOverlay')
     $('leaderboardOverlay').classList.add('hidden');
+});
+
+async function loadModelCatalog() {
+  if (state.models) return state.models;
+  const data = await (await fetch('/api/openrouter/models')).json();
+  state.models = data.models || [];
+  return state.models;
+}
+
+function renderModelOptions(filter) {
+  const query = (filter || '').trim().toLowerCase();
+  const models = state.models || [];
+  const matches = query
+    ? models.filter(
+        (m) =>
+          m.id.toLowerCase().includes(query) ||
+          m.name.toLowerCase().includes(query),
+      )
+    : models;
+  $('agentModel').replaceChildren(
+    ...matches.slice(0, 200).map((m) => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name === m.id ? m.id : `${m.name} — ${m.id}`;
+      return opt;
+    }),
+  );
+}
+
+async function openAddAgentModal() {
+  $('addAgentError').classList.add('hidden');
+  $('addAgentForm').reset();
+  $('tagGeneral').checked = true;
+  const needsKey = !state.hasOpenRouterKey;
+  $('agentKeyLabel').classList.toggle('hidden', !needsKey);
+  $('agentKey').classList.toggle('hidden', !needsKey);
+  $('agentKey').required = needsKey;
+  $('agentKeyHint').textContent = needsKey
+    ? 'Get one at openrouter.ai/keys — pastes once, reused for every agent you add.'
+    : 'Using the OpenRouter key already on file.';
+  $('addAgentOverlay').classList.remove('hidden');
+  $('agentModelSearch').value = '';
+  const loading = document.createElement('option');
+  loading.textContent = 'Loading models…';
+  $('agentModel').replaceChildren(loading);
+  try {
+    await loadModelCatalog();
+    renderModelOptions('');
+  } catch (error) {
+    const err = document.createElement('option');
+    err.textContent = `Couldn't load models: ${error.message}`;
+    $('agentModel').replaceChildren(err);
+  }
+}
+function closeAddAgentModal() {
+  $('addAgentOverlay').classList.add('hidden');
+}
+
+$('addAgentBtn').addEventListener('click', openAddAgentModal);
+$('addAgentCloseBtn').addEventListener('click', closeAddAgentModal);
+$('addAgentOverlay').addEventListener('click', (event) => {
+  if (event.target.id === 'addAgentOverlay') closeAddAgentModal();
+});
+$('agentModelSearch').addEventListener('input', () =>
+  renderModelOptions($('agentModelSearch').value),
+);
+
+$('addAgentForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  $('addAgentError').classList.add('hidden');
+  const model = $('agentModel').value;
+  if (!model) {
+    $('addAgentError').textContent = 'Pick a model from the list.';
+    $('addAgentError').classList.remove('hidden');
+    return;
+  }
+  const tags = [];
+  if ($('tagGeneral').checked) tags.push('coding', 'general');
+  if ($('tagImage').checked) tags.push('image');
+  if ($('tagStl').checked) tags.push('stl');
+  const payload = { label: $('agentLabel').value.trim() || model, model, tags };
+  if (!state.hasOpenRouterKey) payload.apiKey = $('agentKey').value.trim();
+  $('addAgentSubmitBtn').disabled = true;
+  $('addAgentSubmitBtn').textContent = 'ADDING…';
+  try {
+    const response = await fetch('/api/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not add agent');
+    closeAddAgentModal();
+    await loadConfig();
+  } catch (error) {
+    $('addAgentError').textContent = error.message;
+    $('addAgentError').classList.remove('hidden');
+  } finally {
+    $('addAgentSubmitBtn').disabled = false;
+    $('addAgentSubmitBtn').textContent = 'ADD AGENT';
+  }
 });
 
 loadConfig().then(() =>

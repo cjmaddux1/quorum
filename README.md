@@ -31,11 +31,27 @@ used by Implement) are documented in `agents.config.mjs`.
 
 ## Adding or removing an agent
 
-Every AI CLI Quorum can talk to is declared in **`agents.config.mjs`** — nowhere else.
-That file has a full field reference and two worked examples in comments. The short
-version: give it an id, a command to run, args for a version check and for asking a
-question, and whether the prompt goes in as an argument or over stdin. No changes to
-`server.mjs` or the frontend are ever needed to add, remove, or reconfigure an agent.
+Two ways to add an agent, depending on what you're adding:
+
+- **Local CLI tools** (like Codex/Claude Code — full project file access, can implement
+  changes) are declared in **`agents.config.mjs`**. That file has a full field reference
+  and worked examples in comments: give it an id, a command to run, args for a version
+  check and for asking a question, and whether the prompt goes in as an argument or over
+  stdin. No changes to `server.mjs` or the frontend needed.
+- **Hosted models via [OpenRouter](https://openrouter.ai)** (Claude, GPT, Gemini, Llama,
+  Grok, and hundreds more, through one API key) are added from the UI — click **+ Add
+  Agent** in the sidebar, paste an OpenRouter key the first time (reused for every agent
+  after that), search for a model, and it's live immediately, no restart. These agents
+  only see the conversation text — they can't read your project files or implement
+  changes the way Codex/Claude Code can. Remove one by hovering its row and clicking the
+  ✕. The key and added-agent list live in `.data/dynamic-agents.json`, which is
+  gitignored — never commit it.
+
+If a fresh clone has a sibling `AICouncil` folder with its own `.env` containing
+`OPENROUTER_API_KEY=...`, Quorum borrows that key automatically on first run instead of
+asking for one.
+
+Either way, courts, the sidebar, and health checks all pick up the change automatically.
 
 ## Courts
 
@@ -81,8 +97,11 @@ own local session history — `claude --resume` / `--continue` for Claude Code, 
 website chat history — those are separate accounts tied to the web app, not the local CLI.
 Whether an agent you add persists sessions this way depends on that tool.
 
-No API keys are stored by this application. It relies on whatever login each configured
-CLI already has.
+Local CLI agents (Codex, Claude Code, and anything else added via `agents.config.mjs`)
+need no API key stored here — they rely on whatever login that CLI already has.
+OpenRouter agents added through the UI are the exception: that key is stored locally in
+`.data/dynamic-agents.json` (gitignored) and used only to call `openrouter.ai` — it's
+never sent anywhere else and never returned to the browser once saved.
 
 ## Development
 
