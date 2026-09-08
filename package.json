@@ -1,0 +1,21 @@
+{
+  "name": "quorum",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A local AI council platform for Codex and Claude Code CLIs.",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "test": "node --test",
+    "lint": "oxlint",
+    "format": "oxfmt"
+  },
+  "devDependencies": {
+    "oxfmt": "0.61.0",
+    "oxlint": "1.76.0"
+  },
+  "type": "module"
+}

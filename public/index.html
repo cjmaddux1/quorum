@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="A private local AI council platform for the agents installed on this PC."
+    />
+    <title>Quorum</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="scanline" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">Q//01</span>
+        <div>
+          <h1>QUORUM</h1>
+          <p id="councilTagline">LOCAL AI COUNCIL PLATFORM</p>
+        </div>
+      </div>
+      <div class="system-state">
+        <button type="button" id="leaderboardBtn" class="ghost small">
+          LEADERBOARD
+        </button>
+        <span class="pulse"></span><span id="systemLabel">CHECKING AGENTS</span>
+      </div>
+    </header>
+    <div id="leaderboardOverlay" class="overlay hidden">
+      <div class="overlay-panel">
+        <div class="overlay-head">
+          <div>
+            <p class="eyebrow">CROSS-COURT STANDINGS</p>
+            <h2>Leaderboard</h2>
+          </div>
+          <button type="button" id="leaderboardCloseBtn" class="ghost">
+            CLOSE ✕
+          </button>
+        </div>
+        <div id="overallBoard" class="board"></div>
+        <div id="courtBoards"></div>
+      </div>
+    </div>
+    <main class="shell">
+      <aside class="rail">
+        <section class="panel project-panel">
+          <div class="eyebrow">ACTIVE WORKSPACE</div>
+          <label for="project">Project folder</label
+          ><input
+            id="project"
+            type="text"
+            value="C:\Users\User"
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <p class="hint">
+            Members of the active court inspect only the folder selected for
+            this room.
+          </p>
+        </section>
+        <section class="panel">
+          <div class="eyebrow">COURTS</div>
+          <div id="councilTabs" class="council-tabs"></div>
+        </section>
+        <section class="panel members-panel">
+          <div class="eyebrow">IN SESSION</div>
+          <div id="inSession" class="agent-list"></div>
+          <div id="holdingEyebrow" class="eyebrow holding-eyebrow">
+            HOLDING CELL
+          </div>
+          <div id="holdingCell" class="agent-list"></div>
+          <p id="noAgents" class="hint hidden">
+            No agents are currently assigned to this court.
+          </p>
+        </section>
+        <section class="panel benchmark-panel">
+          <div class="eyebrow">RANKING</div>
+          <p class="hint">
+            Runs a short self-benchmark and scores each member on this court's
+            specialty.
+          </p>
+          <button id="benchmarkBtn" type="button" class="ghost full">
+            RUN BENCHMARK
+          </button>
+        </section>
+        <section class="panel room-notes">
+          <div class="eyebrow">COURT PROTOCOL</div>
+          <ol>
+            <li>Independent positions</li>
+            <li>Cross-agent synthesis</li>
+            <li>Visible disagreements</li>
+            <li>Bounded implementation</li>
+          </ol>
+        </section>
+      </aside>
+      <section class="workspace">
+        <div id="emptyState" class="empty-state">
+          <div class="council-orbit" aria-hidden="true">
+            <span>C</span><span>A</span><i></i>
+          </div>
+          <p class="eyebrow">CHANNEL OPEN</p>
+          <h2 id="emptyHeadline">Put the court on the same problem.</h2>
+          <p>
+            Ask for a decision, design, investigation, or plan. You'll see each
+            position and one reconciled answer.
+          </p>
+        </div>
+        <div id="transcript" class="transcript" aria-live="polite"></div>
+        <form id="promptForm" class="composer">
+          <label class="sr-only" for="prompt">Message to the active court</label
+          ><textarea
+            id="prompt"
+            rows="3"
+            placeholder="Tell the court what you want to decide or build…"
+            required
+          ></textarea>
+          <div class="composer-bar">
+            <div class="mode">
+              <span class="mode-dot"></span
+              ><span id="modeLabel">Discussion mode · read only</span>
+            </div>
+            <div class="actions">
+              <button type="button" id="clearBtn" class="ghost">CLEAR</button
+              ><button type="submit" id="discussBtn" class="primary">
+                CONVENE ↗
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+      <aside class="decision-rail">
+        <section class="panel agreement-panel">
+          <div class="eyebrow">ULTIMATE AGREEMENT</div>
+          <div id="agreementEmpty" class="decision-empty">
+            <span>◇</span>
+            <p>The court's bottom-line answer will appear here.</p>
+          </div>
+          <div id="agreementContent" class="agreement-content hidden"></div>
+        </section>
+        <section class="panel decision-panel">
+          <div class="eyebrow">LATEST DECISION</div>
+          <div id="decisionEmpty" class="decision-empty">
+            <span>◇</span>
+            <p>The court's reconciled answer will appear here.</p>
+          </div>
+          <div id="decisionContent" class="decision-content hidden"></div>
+        </section>
+        <section class="panel action-panel">
+          <div class="eyebrow">HANDOFF</div>
+          <h3>Ready to act?</h3>
+          <p id="implementNote">
+            Codex implements, Claude reviews, and Codex gets one correction
+            pass.
+          </p>
+          <button id="implementBtn" class="implement" disabled>
+            IMPLEMENT LAST REQUEST
+          </button>
+          <div class="warning">
+            Edits remain inside the selected project workspace.
+          </div>
+        </section>
+      </aside>
+    </main>
+    <div id="busy" class="busy hidden" role="status">
+      <span class="loader"></span>
+      <div>
+        <strong id="busyTitle">Court in session</strong
+        ><small id="busyDetail">Members are inspecting the project…</small>
+      </div>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
